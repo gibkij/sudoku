@@ -78,11 +78,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BacktrackRecursive.cpp" />
     <ClCompile Include="Cell.cpp" />
     <ClCompile Include="Data.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BacktrackRecursive.h" />
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Data.h" />
   </ItemGroup>
