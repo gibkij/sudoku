@@ -1,7 +1,10 @@
 #include <iostream>
 #include <set>
+#include <stack>
 #include <map>
-
+#include <cassert>
+#include <string>
+static int g_value = 0;
 struct Cell
 {
    typedef char dataType;
@@ -22,6 +25,7 @@ struct Cell
 
    void MakeUniquely(dataType n)
    {
+      g_value++;
       values.clear();
       values.insert(n);
    }
@@ -104,7 +108,7 @@ public:
 
    void Solve()
    {
-      while(true)
+      /*while(true)
       {
          Prepare();
 
@@ -134,7 +138,12 @@ public:
          }
 
          if (!changes) break;
-      }
+      }*/
+     Prepare();
+      g_value = 0;
+     backtrackSearch();
+     Print();
+     std::cout << std::to_string(g_value) << std::endl;
    }
 
 private:
@@ -319,6 +328,146 @@ private:
 
       return changes;
    }
+
+   bool FindInCol(size_t col, Cell::dataType value)
+   {
+      for (size_t i = 0; i < 9; ++i)
+      {
+         Cell& cell = Sudoku[i][col];
+         if (cell.IsUniquely() && cell.values.count(value) == 1)
+            return true;
+      }
+      return false;
+   }
+
+   bool FindInRow(size_t row, Cell::dataType value)
+   {
+      for (size_t i = 0; i < 9; ++i)
+      {
+         Cell& cell = Sudoku[row][i];
+         if (cell.IsUniquely() && cell.values.count(value) == 1)
+            return true;
+      }
+      return false;
+   }
+
+   bool FindInSquad(size_t row, size_t col, Cell::dataType value)
+   {
+      size_t squadRow = row / 3;
+      size_t squadCol = col / 3;
+
+      for (size_t i = 0; i < 3; ++i)
+      {
+         for (size_t j = 0; j < 3; ++j)
+         {
+            Cell& cell = Sudoku[squadRow * 3 + i][squadCol * 3 + j];
+            if (cell.IsUniquely() && cell.values.count(value) == 1) 
+               return true;
+         }
+      }
+
+      return false;
+   }
+
+   bool IsLegal(size_t row, size_t col, Cell::dataType value)
+   {
+      return !(FindInCol(col, value) || FindInRow(row, value) || FindInSquad(row, col, value));
+   }
+
+   struct Command
+   {
+      int column;
+      int row;
+      std::set<Cell::dataType> originalData;
+      Cell::dataType value;
+   };
+
+   void backtrackSearch()
+   {
+      std::stack<Command> backtrackStack;
+      bool addNew = true; //or next
+      for (size_t row = 0; row < 9; row++)
+      {
+         for (size_t column = 0; column < 9; column++)
+         {
+            Cell& cell = Sudoku[row][column];
+            //std::cout << std::endl;
+            //Print();
+            //Если цифра на месте идем дальше
+            if (cell.IsUniquely())
+            {
+               continue;
+            }
+            else
+            {
+               Cell::dataType value;
+               bool isFindVariant = false;
+               for (auto& val : cell.values)
+               {
+                  if (IsLegal(row, column, val))
+                  {
+                     isFindVariant = true;
+                     value = val;
+                     break;
+                  }
+               }
+
+               if (isFindVariant)
+               {
+                  Command comm;
+                  comm.column = column;
+                  comm.row = row;
+                  comm.originalData = cell.values;
+                  comm.value = value;
+                  backtrackStack.push(comm);
+                  cell.MakeUniquely(value);
+               }
+               else
+               {
+                  assert(!backtrackStack.empty());
+                  while (true)
+                  {
+                     bool breakInFor = false;
+                     Command comm = backtrackStack.top();
+                     backtrackStack.pop();
+                     auto it = comm.originalData.find(comm.value);
+                     it++;
+                     
+                     if (it == comm.originalData.end())
+                     {
+                        Sudoku[comm.row][comm.column].values = comm.originalData;
+                        continue;
+                     }
+
+                     for (it; it != comm.originalData.end(); ++it)
+                     {
+                        if (IsLegal(comm.row, comm.column, *it))
+                        {
+                           row = comm.row;
+                           column = comm.column;
+                           Command newComm(comm);
+                           newComm.value = *it;
+                           Sudoku[comm.row][comm.column].MakeUniquely(*it);
+                           backtrackStack.push(newComm);
+                           breakInFor = true;
+                           break;
+                        }
+                     }
+                     if (breakInFor)
+                        break;
+                     else
+                        Sudoku[comm.row][comm.column].values = comm.originalData;
+                     
+                  }
+               }
+
+            }
+            
+         }
+      }
+   }
+
+   
 };
 
 int main(int argc, char **argv)
@@ -336,7 +485,7 @@ int main(int argc, char **argv)
              "7 * *  * * *  8 * *"
              "* 1 *  * * 9  * * *"
              "* * 2  5 4 *  * * *"//*/
-             //*
+             /*
              "* * *  1 * *  9 2 *"
              "* 6 1  * * *  * * *"
              "5 * *  * * *  8 * *"
@@ -360,6 +509,18 @@ int main(int argc, char **argv)
              "* * *  * * *  * * 5"
              "* * *  * * *  3 * *"
              "* * *  * * *  * * *"//*/
+
+             "9 * *  * * 5  * * 1"
+             "* * *  * 4 *  * * 8"
+             "* * *  7 * *  3 2 *"
+
+             "* 9 7  2 6 *  * 5 *"
+             "* * *  * * *  * * *"
+             "* 2 *  * 5 4  7 8 *"
+
+             "* 4 1  * * 6  * * *"
+             "3 * *  * 1 *  * * *"
+             "6 * *  8 * *  * * 9"
              );
    std::cout << "Before:" << std::endl;
    test.Print();
